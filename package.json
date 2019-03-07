@@ -1,0 +1,16 @@
+{
+  "name": "ideacasedemo",
+  "version": "1.0.0",
+  "description": "back-end server for idea-case-demo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tung Huynh",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.4",
+    "jsonfile": "^5.0.0",
+    "nodemon": "^1.18.10"
+  }
+}
