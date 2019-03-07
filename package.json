@@ -1,5 +1,5 @@
 {
-  "name": "ideacasedemo",
+  "name": "ideacasedemo-backend",
   "version": "1.0.0",
   "description": "back-end server for idea-case-demo",
   "main": "index.js",

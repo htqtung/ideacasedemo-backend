@@ -1,8 +1,5 @@
-/*  No need to be able to create this back-end, just
-    be able to read it for understanding how the 
-    client must call it and what can it expect as response!
-
-    server2.js, where the back-end is defined.
+/*  
+    index.js, where the back-end is defined.
 
    1. First the modules it needs in its web services,
    2. Then the web services defined: URL pattern => handler function, 
@@ -11,7 +8,8 @@
 
    To start the web server for real, we need to run this
    command on server command line, in the folder of this file:
-   > sudo node server2.js
+   > nodemon --ignore '*.json' <--------------------------------------------------
+   OR > node index.js
  */
 
 // > sudo npm install --save express          or -g mean-cli instead of --save express  + mean init yourNewApp
@@ -80,9 +78,7 @@ app.get('/category/add', function (req, res) {
     var budget = req.query.budget;
     console.log(req.query);
     console.log("Adding with GET - name: " + name + " budget: " + budget);   // ZZZZZ
-    var returnValue = addCategory(req, res, id, name, budget, FILEPATH);
-    res.writeHead(Number(returnValue.HttpStatusCode), { 'Content-Type': 'text/plain' });
-    res.end(returnValue.HttpStatusCode + " " + returnValue.Message.toString());
+    addCategory(req, res, id, name, budget, FILEPATH);
 })
 
 // 3 3 3 3 3 3 3 3 3 3   POST -- prefered way to add data - need encryption
@@ -91,43 +87,24 @@ app.post('/category/add', function (req, res) {
     var name = req.body.name;
     var budget = req.body.budget;
     console.log("Adding with POST - name: " + name + " budget: " + budget);   // ZZZZZ
-    var returnValue = addCategory(req, res, id, name, budget, FILEPATH);
-    res.writeHead(Number(returnValue.HttpStatusCode), { 'Content-Type': 'text/plain' });
-    res.end(returnValue.HttpStatusCode + " " + returnValue.Message.toString());
+    addCategory(req, res, id, name, budget, FILEPATH);
 })
 
+// the parameters include id, name, budget so that both POST and GET method can use this function
 function addCategory(req, res, id, name, budget, filepath) {
     "use strict";
-    var returnValue;
     if (budget !== 0 && !budget) {
-        console.log(req.body);
-        returnValue = { "HttpStatusCode": "400", "Message": "Error: Budget cannot be missing!" };
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end("Error: Budget cannot be missing!");
     } else if (budget < 0) {
-        returnValue = { "HttpStatusCode": "400", "Message": "Error: Budget cannot be below zero!" };
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end("Error: Budget cannot be below zero!");
     } else if (!name || name.length === 0) {
-        returnValue = { "HttpStatusCode": "400", "Message": "Error: Name cannot be empty!" };
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end("Error: Name cannot be empty!");
     } else {
-        switch (name) {
-            case 'Alfred':
-                returnValue = { "HttpStatusCode": "409", "Message": "Error: Alfred already in database!" };
-                break;
-            case 'Errol':
-                returnValue = { "HttpStatusCode": "500", "Message": "Error: Some server error inserting Errol!" };
-                break;
-            case 'Conrad':
-                returnValue = { "HttpStatusCode": "502", "Message": "Error: Connection to secondary server could not be established for Conrad!" };
-                break;
-            case 'Deborah':
-                returnValue = { "HttpStatusCode": "503", "Message": "Error: Database not available for Deborah!" };
-                break;
-            default:
-                addItemToJson({ id: id, name: name, budget: budget }, filepath);
-                returnValue = { "HttpStatusCode": "200", "Message": "Success: Added " + id + ', ' + name + ', ' + budget + "." };
-                break;
-        }
+        addItemToJson(res, { id: id, name: name, budget: budget }, filepath);
     }
-
-    return returnValue;
 }
 
 // call-back way ==> NOT GOOD
@@ -141,7 +118,7 @@ function addCategory(req, res, id, name, budget, filepath) {
 // }
 
 // Using promise - BETTER
-function addItemToJson(newItem, filepath) {
+function addItemToJson(res, newItem, filepath) {
     jsonfile.readFile(filepath)
         .then(obj => {
             obj.push(newItem);
@@ -149,16 +126,16 @@ function addItemToJson(newItem, filepath) {
         })
         .then(obj =>
             jsonfile.writeFile(filepath, obj)
-                .then((req, res) => {
+                .then(() => {
                     res.writeHead(200, { 'Content-Type': 'text/plain' });
                     res.end("Writing JSON to server file system OK.");
                 })
-                .catch(res => {
+                .catch(() => {
                     res.writeHead(500, { 'Content-Type': 'text/plain' });
                     res.end("Writing JSON to server file system FAILED.");
                 })
         )
-        .catch(res => {
+        .catch(() => {
             res.writeHead(500, { 'Content-Type': 'text/plain' });
             res.end("Reading JSON from server file system FAILED.");
         })
@@ -170,63 +147,58 @@ app.get('/category', function (req, res) {
     var key = req.query[accessor];
     console.log("Search using " + accessor + ": " + key);  // ZZZZZ
     "use strict";
-    var returnValue;
-
     if (!key || key.length === 0) {
-        console.log("enter if code check key");
-        returnValue = { "HttpStatusCode": "400", "Message": key + " cannot be empty!" };
-        res.writeHead(Number(returnValue.HttpStatusCode), { 'Content-Type': 'text/plain' });
-        res.end(returnValue.Message.toString());
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end(key + " cannot be empty!");
     } else {
-        console.log("if code check key not true, enter else"); // some problem with promises, the function is run after if(returnValue.HttpStatusCode)
-        returnValue = searchForItem(key, accessor, FILEPATH);
-        console.log("searchforItem done");
-        console.log("httpstatuscode now is: " + returnValue.HttpStatusCode);
-        if(Number(returnValue.HttpStatusCode) == 200) {
-            res.writeHead(Number(returnValue.HttpStatusCode), { 'Content-Type': 'text/plain' });
-            res.end(returnValue.HttpStatusCode + " " + returnValue.Message.toString());
-            res.end(JSON.stringify(returnValue.Data));  // If found, just writing back the JSONF
-        }
-        else {
-            res.writeHead(Number(returnValue.HttpStatusCode), { 'Content-Type': 'text/plain' });
-            res.end(returnValue.HttpStatusCode + " " + returnValue.Message.toString());
-        }
+        searchForItem(req, res, key, accessor, FILEPATH);
     };
 });
 
-function searchForItem(key, accessor, filepath) {
-    var index, returnValue;
+function searchForItem(req, res, key, accessor, filepath) {
+    var index;
     jsonfile.readFile(filepath)
         .then(array => {
-            console.log("Start searching through the database");
-            for (index = 0; index < array.length; index = index + 1) {
-                // console.log("Item " + index + " contains value: " + array[index][accessor]);   // ZZZZZ
+            for (index in array) {
                 if (array[index][accessor] == key) {
-                    returnValue = {
-                        "HttpStatusCode": "200",
-                        "Message": "Item with " + accessor + ": " + key + " found.",
-                        "Data": { "id": array[index].id, "name": array[index].name, "budget": array[index].budget }
-                    };
+                    res.writeHead(200, { 'Content-Type': 'text/plain' });
+                    res.end("Item with " + accessor + ": " + key + " found: " + JSON.stringify(array[index]));
                     break;
-                } else {
-                    returnValue = {
-                        "HttpStatusCode": "404",
-                        "Message": "Item with " + accessor + ": " + key + " not found."
-                    };
                 }
             }
+            res.writeHead(404, { 'Content-Type': 'text/plain' });
+            res.end("Item with " + accessor + ": " + key + " not found!");
         })
-        .catch(obj => {
-            returnValue = {
-                "HttpStatusCode": "500",
-                "Message": "Error accessing database."
-            }
+        .catch(() => {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end("Error! Reading JSON from server file system FAILED.");
         })
-
-    return returnValue;
 }
 
 // delete category
+app.post('/category/delete', function (req, res) {
+    deleteItem(req, res, FILEPATH);
+});
+
+function deleteItem(req, res, filepath) {
+    jsonfile.readFile(filepath)
+        .then(array => {
+            array = array.filter(category => category.id !== req.body.id);
+            jsonfile.writeFile(filepath, array)
+                .then(() => {
+                    res.writeHead(200, { 'Content-Type': 'text/plain' });
+                    res.end("Item " + JSON.stringify(req.body) + " deleted!");
+                })
+                .catch(() => {
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    res.end("Updating data to server file system FAILED.");
+                })
+        })
+        .catch(() => {
+            res.writeHead(500, { 'Content-Type': 'text/plain' });
+            res.end("Error! Reading JSON from server file system FAILED.");
+        })
+}
 
 var server = app.listen(8989, function () {
     "use strict";
