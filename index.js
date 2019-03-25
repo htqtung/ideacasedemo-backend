@@ -31,6 +31,7 @@ app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
 var jsonfile = require('jsonfile');
 
 const FILEPATH = __dirname + "/" + "categories.json";
+const PORT = 8989;
 
 app.use(function (req, res, next) {
     "use strict";
@@ -200,7 +201,7 @@ function deleteItem(req, res, filepath) {
         })
 }
 
-var server = app.listen(8989, function () {
+var server = app.listen(PORT, function () {
     "use strict";
     var host = server.address().address;
     var port = server.address().port;
